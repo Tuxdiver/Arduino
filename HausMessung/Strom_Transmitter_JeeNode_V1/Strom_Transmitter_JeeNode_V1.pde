@@ -13,9 +13,9 @@
 #include <avr/eeprom.h>
 #include <avr/pgmspace.h>
 
-#define SCHWELLWERT_IN 80
-#define SCHWELLWERT_OUT 65
-#define TRANSMIT_RATE 1000
+#define SCHWELLWERT_IN   300
+#define SCHWELLWERT_OUT  250
+#define TRANSMIT_RATE   1000
 
 #define REFLEX_DEBUG 1
 #define COLLECT 0x20 // collect mode, i.e. pass incoming without sending acks
@@ -98,16 +98,20 @@ void loop()
 {
 
   int a;
-  int b;
   unsigned long timediff;
 
-  a = strom.anaRead();
-  b = map(a,0,1024,0,256);
-  //   Serial.println(b);
+  a=0;
+  for (int i=0; i<5; i++) {
+    a += strom.anaRead();
+    //Serial << a << " ";
+  }
+  a = a/5;
 
-  if(b >= SCHWELLWERT_IN && insend==0) { 
+  // Serial.println(a);
+
+  if(a >= SCHWELLWERT_IN && insend==0) { 
     Serial.print("In: ");
-    Serial.println(b);
+    Serial.println(a);
 
 #if REFLEX_DEBUG > 0
     strom.digiWrite(true); // Flash a light to show transmitting
@@ -143,14 +147,14 @@ void loop()
 #if REFLEX_DEBUG > 2
   if (insend == 1) {
     Serial.print("Wert: ");
-    Serial.println(b);
+    Serial.println(a);
   }
 #endif 
 
-  if(b < SCHWELLWERT_OUT) {
+  if(a < SCHWELLWERT_OUT) {
     if (insend) {
       Serial.print("Out: ");
-      Serial.println(b);
+      Serial.println(a);
     }
 #if REFLEX_DEBUG > 0
     strom.digiWrite(false);
@@ -181,22 +185,4 @@ void loop()
 
   delay(10);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
