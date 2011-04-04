@@ -6,3 +6,5 @@ Currently included here:
 Contains code to meassure power consumption of our house by an Arduino and to send these data
 via radio to a central arduino node, where it is stored on a NAS.
 Code for temperature meassurement with DS18B20 sensors will follow
+
+* more coming soon...
