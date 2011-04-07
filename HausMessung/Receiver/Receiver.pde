@@ -44,8 +44,7 @@ int id;
 void loop()
 {
 
-    if ( rf12_recvDone() && rf12_crc == 0 )
-    {
+    if ( rf12_recvDone() && rf12_crc == 0 ) {
         // LED an
         led.digiWrite(1);
 
@@ -71,10 +70,11 @@ void loop()
         }
 
 
-        if ( RF12_WANTS_ACK )
+        if ( RF12_WANTS_ACK ) {
             rf12_sendStart(RF12_ACK_REPLY, 0, 0);
         }
 
         // LED wieder aus
         led.digiWrite(0);
+    }
 }
