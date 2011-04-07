@@ -14,25 +14,25 @@
 byte myId;
 Port led (1);
 
-// no-cost stream operator as described at 
+// no-cost stream operator as described at
 // http://sundial.org/arduino/?page_id=119
 template<class T>
 inline Print &operator <<(Print &obj, T arg)
-{ 
-  obj.print(arg); 
-  return obj; 
+{
+    obj.print(arg);
+    return obj;
 }
 
 
 void setup()
 {
-  Serial.begin(57600);	// Debugging only
-  Serial.println("setup");
+    Serial.begin(57600);
+    Serial.println("setup");
 
-  Serial.print("\n[rfStrings]");
-  myId = rf12_config();
+    Serial.print("\n[rfStrings]");
+    myId = rf12_config();
 
-  led.mode(OUTPUT);
+    led.mode(OUTPUT);
 }
 
 unsigned long watt;
@@ -44,42 +44,37 @@ int id;
 void loop()
 {
 
-  if ( rf12_recvDone() && rf12_crc == 0 )
-  {
-    led.digiWrite(1);
+    if ( rf12_recvDone() && rf12_crc == 0 )
+    {
+        // LED an
+        led.digiWrite(1);
 
-    char *buf;
-    buf = (char *)rf12_data;
-    buf[rf12_len]=0;
+        char *buf;
+        buf = (char *)rf12_data;
+        buf[rf12_len] = 0;
 
-    id=0;
-    
-    // Strom?
-    sscanf((char *)buf, "Strom;%d;%lu;%lu;%lu;%lu",&id,&watt,&count,&time,&txcounter);
-    if (id) {
-      Serial << "# Strom :" << (char *)buf << ":\n";
-      Serial << "STROM;WATT;" << id << ";" << watt  << "\n";
-      Serial << "STROM;COUNT;" << id << ";" << count << "\n";
-      Serial << "STROM;TIME;" << id << ";" << time  << "\n";
-      Serial << "STROM;TXCOUNT;" << id << ";" << txcounter  << "\n";
-    }
-    
-    // Unbekannter Datensatz
-    if (!id) {
-      Serial << "# Unknown data :" << (char *)buf << ":\n";
-    }      
+        id = 0;
+
+        // Strom?
+        sscanf((char *)buf, "Strom;%d;%lu;%lu;%lu;%lu", &id, &watt, &count, &time, &txcounter);
+        if ( id ) {
+            Serial << "# Strom :" << (char *)buf << ":\n";
+            Serial << "STROM;WATT;" << id << ";" << watt  << "\n";
+            Serial << "STROM;COUNT;" << id << ";" << count << "\n";
+            Serial << "STROM;TIME;" << id << ";" << time  << "\n";
+            Serial << "STROM;TXCOUNT;" << id << ";" << txcounter  << "\n";
+        }
+
+        // Unbekannter Datensatz
+        if ( !id ) {
+            Serial << "# Unknown data :" << (char *)buf << ":\n";
+        }
 
 
-    if (RF12_WANTS_ACK)
-      rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+        if ( RF12_WANTS_ACK )
+            rf12_sendStart(RF12_ACK_REPLY, 0, 0);
+        }
 
-    led.digiWrite(0);
-  }
-
+        // LED wieder aus
+        led.digiWrite(0);
 }
-
-
-
-
-
-
