@@ -4,29 +4,65 @@
 #include <SPI.h>
 #include "Ethernet.h"
 #include "WebServer.h"
-#include <VirtualWire.h>
 
-// Data wire is plugged into port 2 on the Arduino
+#include <Ports.h>
+#include <RF12.h>
+
+
+// Data wire is plugged into port 3 on the Arduino
 #define ONE_WIRE_BUS 3
 #define TEMPERATURE_PRECISION 12
 
-#define VIRTUAL_WIRE 4
+#define TRANSMIT_RATE   1000
 
-// no-cost stream operator as described at 
+// Utility class to fill a buffer with string data
+class PacketBuffer : public Print {
+public:
+    PacketBuffer () : fill (0) {
+    }
+
+    const byte* buffer() {
+        return buf;
+    }
+
+    byte length() {
+        return fill;
+    }
+
+    void reset() {
+        fill = 0;
+    }
+
+    const char* print() {
+        buf[fill]=0;
+        return (char *)buf;
+    }
+
+    virtual void write(uint8_t ch)
+    {
+        if (fill < sizeof buf) buf[fill++] = ch;
+    }
+
+    private:
+        byte fill, buf[RF12_MAXDATA];
+};
+
+
+// no-cost stream operator as described at
 // http://sundial.org/arduino/?page_id=119
 template<class T>
 inline Print &operator <<(Print &obj, T arg)
-{ 
-  obj.print(arg); 
-  return obj; 
+{
+  obj.print(arg);
+  return obj;
 }
 
 // CHANGE THIS TO YOUR OWN UNIQUE VALUE
-static uint8_t mac[] = { 
+static uint8_t mac[] = {
   0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
 
 // CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[] = { 
+static uint8_t ip[] = {
   192, 168, 178, 222 };
 
 #define PREFIX ""
@@ -37,38 +73,38 @@ WebServer webserver(PREFIX, 80);
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
-// Pass our oneWire reference to Dallas Temperature. 
+// Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
 #define NUM_DEVICES 8
 int numberOfDevices; // Number of temperature devices found
 
 
-DeviceAddress device_ids[NUM_DEVICES] = { 
-  { 
+DeviceAddress device_ids[NUM_DEVICES] = {
+  {
     0x28,0x32,0xC4,0xFA,0x01,0x00,0x00,0x61        }
   , // Wozi
-  { 
+  {
     0x28,0xfe,0xef,0xca,0x01,0x00,0x00,0x43        }
   , // Erdgeschoss
-  { 
+  {
     0x28,0x65,0x02,0xFB,0x01,0x00,0x00,0xFB        }
   , // Keller
-  { 
+  {
     0x28,0x1d,0x1f,0xcb,0x01,0x00,0x00,0x1a        }
   , // Heizung
-  { 
+  {
     0x28,0x4E,0xE6,0xFA,0x01,0x00,0x00,0xFF        }
   , // Onboard
 
-  { 
+  {
     0x28,0x4a,0x27,0xcb,0x01,0x00,0x00,0x0b        }
   , // Temp1
 
-  { 
+  {
     0x28,0x22,0x0c,0x72,0x02,0x00,0x00,0x07      }
   , // Temp 6
-  { 
+  {
     0x28,0x31,0xd1,0xfa,0x01,0x00,0x00,0x96      }
   , // Dach
 
@@ -90,13 +126,10 @@ char* device_names[NUM_DEVICES] = {
 };
 
 
-long watt=-1;
-unsigned long watt_count;
-unsigned long watt_time;
-
-// Strom-Messung
-uint8_t buf[100];
-uint8_t buflen = 100;
+byte myId;
+PacketBuffer payload;   // temp buffer to send out
+unsigned long last_transmit = 0;
+unsigned long tx_counter=0;
 
 
 void resetCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
@@ -144,15 +177,14 @@ void tempCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
       // server << i << device_connected[i]<<"<br>";
       if (device_connected[i]==1) {
         float tempC = sensors.getTempC(device_ids[i]);
-        server << device_names[i] << " ( Sensor " << i << " ): " << tempC << " Grad Celsius<br>\n";	
+        server << device_names[i] << " ( Sensor " << i << " ): " << tempC << " Grad Celsius<br>\n";
         server << "<img src=\"http://chart.apis.google.com/chart?cht=gom&chs=250x150&chxt=x,y&chds=" << min << "," << max << "&chxr=0,"<<min<<","<<max<<",10|1,"<<min<<","<<max<<",10";
         server << "&chco=0000ff,00ff00,ffff00,ff0000";
-        server << "&chtt="<< device_names[i];	
+        server << "&chtt="<< device_names[i];
         server << "&chd=t:" << tempC << "&chl=" << tempC;
         server << "\"><br>\n<hr>\n";
       }
-    } 
-    server << "Strom (Watt):" << watt << "<br>\n<hr>";
+    }
   }
 }
 
@@ -176,27 +208,14 @@ void csvCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
       // server << i << device_connected[i]<<"<br>";
       if (device_connected[i]==1) {
         float tempC = sensors.getTempC(device_ids[i]);
-        server << i << ";" << device_names[i] << ";" << tempC << "\n"; 
+        server << i << ";" << device_names[i] << ";" << tempC << "\n";
       }
-    } 
+    }
   }
 }
 
 
 
-void strom_csv_cmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
-{
-  /* this line sends the standard "we're all OK" headers back to the
-   browser */
-  server.httpSuccess("text/plain");
-
-  /* if we're handling a GET or POST, we can output our data here.
-   For a HEAD request, we just stop after outputting headers. */
-  if (type != WebServer::HEAD)
-  {
-    server << 0 << ";" << "Strom" << ";" << watt << ";" << watt_count << ";" << watt_time << "\n"; 
-  }
-}
 
 
 
@@ -235,7 +254,7 @@ void init_temp(void) {
       device_connected[i]=0;
       Serial << "Device ";
       printAddress(device_ids[i]);
-      Serial  << " nicht gefunden!\n"; 
+      Serial  << " nicht gefunden!\n";
     }
   }
 
@@ -245,22 +264,17 @@ void init_temp(void) {
 void setup(void)
 {
   // start serial port
-  Serial.begin(9600);
+  Serial.begin(57600);
 
   // Init temperature sensors
   init_temp();
 
 
-  // Initialise the IO and ISR
-  vw_set_ptt_inverted(true); // Required for DR3100
-  vw_set_rx_pin(VIRTUAL_WIRE);
-
-  vw_setup(2000);	 // Bits per sec
-  vw_rx_start();       // Start the receiver PLL running
-
-
   /* initialize the Ethernet adapter */
   Ethernet.begin(mac, ip);
+
+  myId = rf12_config();
+
 
   /* setup our default command that will be run when the user accesses
    * the root page on the server */
@@ -269,11 +283,12 @@ void setup(void)
 
   // setup the other URLs
   webserver.addCommand("csv.html", &csvCmd);
-  webserver.addCommand("strom_csv.html", &strom_csv_cmd);
   webserver.addCommand("reset.html", &resetCmd);
 
   /* start the webserver */
   webserver.begin();
+
+  last_transmit = millis();
 
 }
 
@@ -281,27 +296,41 @@ void setup(void)
 
 
 void loop(void)
-{ 
-  // Webserver
-  char buff[64];
-  int len = 64;
+{
+    // Webserver
+    char buff[64];
+    int len = 64;
 
+    rf12_recvDone();
 
+    if ( ( millis() - last_transmit >= TRANSMIT_RATE ) && rf12_canSend() ) {
 
-  if (vw_get_message(buf, &buflen)) // Non-blocking
-  {
-    sscanf((char *)buf, "%lu;%lu;%lu",&watt,&watt_count,&watt_time);
-    Serial.print("Funk gelesen: -");
-    Serial.print((char *)buf);
-    Serial.print("- Watt: ");
-    Serial.println(watt);
-  }
+        // Send the command to get temperatures
+        sensors.requestTemperatures();
 
-  /* process incoming connections one at a time forever */
-  webserver.processConnection(buff, &len);
+        // Loop through each device, print out temperature data for ( int i = 0; i < NUM_DEVICES; i++ ) {
+        // server << i << device_connected [i] <<"<br>";
+        payload.reset();
+        for(int i=0;i<NUM_DEVICES; i++) {
+            if (device_connected[i]==1) {
+                float tempC = sensors.getTempC(device_ids[i]);
+                payload << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC;
+            }
+        }
 
-  // don't like busy waits - just sleep a while
-  delay(50);
+        byte header = RF12_HDR_ACK;
+        header |= RF12_HDR_DST | 1;
+        rf12_sendStart(header, payload.buffer() , payload.length());
+        rf12_sendWait(0);
+
+        last_transmit = millis();
+    }
+
+    /* process incoming connections one at a time forever */
+    webserver.processConnection(buff, &len);
+
+    // don't like busy waits - just sleep a while
+    delay(50);
 }
 
 
@@ -314,9 +343,3 @@ void printAddress(DeviceAddress deviceAddress)
     Serial.print(deviceAddress[i], HEX);
   }
 }
-
-
-
-
-
-
