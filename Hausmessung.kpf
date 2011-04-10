@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Komodo Project File - DO NOT EDIT -->
+<project id="9b120cb2-1cb4-5147-9456-7b21aef52236" kpf_version="4" name="Hausmessung.kpf">
+<file id="12a90cb1-412d-2c4b-94c9-511210f6b9de" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="Receiver.pde" url="HausMessung/Receiver/Receiver.pde">
+</file>
+<file id="24b049e2-d177-a040-a1e3-8daf06e20450" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="Temp_Transmitter.pde" url="HausMessung/Temp_Transmitter/Temp_Transmitter.pde">
+</file>
+<file id="5331b0ef-db83-ae44-b5fb-93d5672472aa" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="Strom_Transmitter.pde" url="HausMessung/Strom_Transmitter/Strom_Transmitter.pde">
+</file>
+<file id="67da3387-bb0a-ad48-9168-baeba45901f7" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="read_serial_rf12_data.pl" url="HausMessung/read_serial_rf12_data/read_serial_rf12_data.pl">
+</file>
+<preference-set idref="9b120cb2-1cb4-5147-9456-7b21aef52236">
+  <boolean id="import_live">0</boolean>
+</preference-set>
+</project>

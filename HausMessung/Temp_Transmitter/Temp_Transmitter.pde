@@ -1,9 +1,5 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
-#define WEBDUINO_SERIAL_DEBUGGING 0
-#include <SPI.h>
-#include "Ethernet.h"
-#include "WebServer.h"
 
 #include <Ports.h>
 #include <RF12.h>
@@ -15,37 +11,12 @@
 
 #define TRANSMIT_RATE   1000
 
-// Utility class to fill a buffer with string data
-class PacketBuffer : public Print {
-public:
-    PacketBuffer () : fill (0) {
-    }
 
-    const byte* buffer() {
-        return buf;
-    }
-
-    byte length() {
-        return fill;
-    }
-
-    void reset() {
-        fill = 0;
-    }
-
-    const char* print() {
-        buf[fill]=0;
-        return (char *)buf;
-    }
-
-    virtual void write(uint8_t ch)
-    {
-        if (fill < sizeof buf) buf[fill++] = ch;
-    }
-
-    private:
-        byte fill, buf[RF12_MAXDATA];
-};
+struct {
+    byte id;    // temp sensor: 0..255
+    int temp;   // temperature * 100
+    char name[20];
+} payload;
 
 
 // no-cost stream operator as described at
@@ -56,18 +27,6 @@ inline Print &operator <<(Print &obj, T arg)
   obj.print(arg);
   return obj;
 }
-
-// CHANGE THIS TO YOUR OWN UNIQUE VALUE
-static uint8_t mac[] = {
-  0xDE, 0xAD, 0xBE, 0xEF, 0xFE, 0xED };
-
-// CHANGE THIS TO MATCH YOUR HOST NETWORK
-static uint8_t ip[] = {
-  192, 168, 178, 222 };
-
-#define PREFIX ""
-
-WebServer webserver(PREFIX, 80);
 
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -127,96 +86,8 @@ char* device_names[NUM_DEVICES] = {
 
 
 byte myId;
-PacketBuffer payload;   // temp buffer to send out
 unsigned long last_transmit = 0;
 unsigned long tx_counter=0;
-
-
-void resetCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
-{
-  /* this line sends the standard "we're all OK" headers back to the
-   browser */
-  server.httpSuccess();
-
-  /* if we're handling a GET or POST, we can output our data here.
-   For a HEAD request, we just stop after outputting headers. */
-  if (type != WebServer::HEAD)
-  {
-    Serial.print("Resetting Temp\n");
-    init_temp();
-    Serial.print("Reset done\n");
-    server << "Reset done<br><a href=\"/\">back</a>";
-  }
-
-}
-
-
-
-
-void tempCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
-{
-  /* this line sends the standard "we're all OK" headers back to the
-   browser */
-  server.httpSuccess();
-
-  /* if we're handling a GET or POST, we can output our data here.
-   For a HEAD request, we just stop after outputting headers. */
-  if (type != WebServer::HEAD)
-  {
-
-
-    server << "<a href=\"reset.html\">reset</a> | <a href=\"csv.html\">csv</a><br>\n";
-    sensors.requestTemperatures(); // Send the command to get temperatures
-
-      int min=-10;
-    int max=60;
-
-    // Loop through each device, print out temperature data
-    for(int i=0;i<NUM_DEVICES; i++)
-    {
-      // server << i << device_connected[i]<<"<br>";
-      if (device_connected[i]==1) {
-        float tempC = sensors.getTempC(device_ids[i]);
-        server << device_names[i] << " ( Sensor " << i << " ): " << tempC << " Grad Celsius<br>\n";
-        server << "<img src=\"http://chart.apis.google.com/chart?cht=gom&chs=250x150&chxt=x,y&chds=" << min << "," << max << "&chxr=0,"<<min<<","<<max<<",10|1,"<<min<<","<<max<<",10";
-        server << "&chco=0000ff,00ff00,ffff00,ff0000";
-        server << "&chtt="<< device_names[i];
-        server << "&chd=t:" << tempC << "&chl=" << tempC;
-        server << "\"><br>\n<hr>\n";
-      }
-    }
-  }
-}
-
-
-
-void csvCmd(WebServer &server, WebServer::ConnectionType type, char *, bool)
-{
-  /* this line sends the standard "we're all OK" headers back to the
-   browser */
-  server.httpSuccess("text/plain");
-
-  /* if we're handling a GET or POST, we can output our data here.
-   For a HEAD request, we just stop after outputting headers. */
-  if (type != WebServer::HEAD)
-  {
-    sensors.requestTemperatures(); // Send the command to get temperatures
-
-      // Loop through each device, print out temperature data
-    for(int i=0;i<NUM_DEVICES; i++)
-    {
-      // server << i << device_connected[i]<<"<br>";
-      if (device_connected[i]==1) {
-        float tempC = sensors.getTempC(device_ids[i]);
-        server << i << ";" << device_names[i] << ";" << tempC << "\n";
-      }
-    }
-  }
-}
-
-
-
-
 
 
 void init_temp(void) {
@@ -269,25 +140,6 @@ void setup(void)
   // Init temperature sensors
   init_temp();
 
-
-  /* initialize the Ethernet adapter */
-  Ethernet.begin(mac, ip);
-
-
-
-
-  /* setup our default command that will be run when the user accesses
-   * the root page on the server */
-  webserver.setDefaultCommand(&tempCmd);
-  webserver.addCommand("index.html", &tempCmd);
-
-  // setup the other URLs
-  webserver.addCommand("csv.html", &csvCmd);
-  webserver.addCommand("reset.html", &resetCmd);
-
-  /* start the webserver */
-  webserver.begin();
-
   last_transmit = millis();
   myId = rf12_config();
   Serial.println("Setup dne");
@@ -298,9 +150,6 @@ void setup(void)
 
 void loop(void)
 {
-    // Webserver
-    char buff[64];
-    int len = 64;
 
     rf12_recvDone();
 
@@ -316,14 +165,14 @@ void loop(void)
             if (device_connected[i]==1) {
                 rf12_recvDone();
                 if (rf12_canSend()) {
-                payload.reset();
-
+                payload.id = i;
+                strncpy((char*)payload.name, device_names[i], 19);
                 float tempC = sensors.getTempC(device_ids[i]);
-                payload << "Temp" << ";"<< i << ";" << tempC  << ";" << device_names[i];
-                Serial  << "Temp" << ";"<< i << ";" << tempC  << ";" << device_names[i] << "\n";
- 
+                payload.temp = (int)(tempC*100);
+                Serial  << "Temp" << ";"<< i << ";" << payload.temp  << ";" << payload.name << "\n";
+
                 byte header = RF12_HDR_DST | 1;
-                rf12_sendStart(header, payload.buffer() , payload.length());
+                rf12_sendStart(header, &payload , sizeof(payload));
                 rf12_sendWait(0);
                 }
             }
@@ -334,11 +183,9 @@ void loop(void)
         last_transmit = millis();
     }
 
-    /* process incoming connections one at a time forever */
-    webserver.processConnection(buff, &len);
 
     // don't like busy waits - just sleep a while
-    delay(50);
+    delay(10);
 }
 
 
