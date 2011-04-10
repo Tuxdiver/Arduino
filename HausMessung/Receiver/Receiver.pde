@@ -71,11 +71,11 @@ void loop()
      
         id=-1;
         // Strom?
-        sscanf((char *)buf, "Temp;%d;%s;%f", &id, &name, &temp) ;
+        sscanf((char *)buf, "Temp;%d;%.2f;%s", &id, &temp, &name) ;
         if (id != -1) {
             //Serial << "# Temp :" << (char *)buf << ":\n";
-            Serial << "Temp;" << name << ";" << id << ";" << temp  << "\n";
-        } 
+            Serial << "Temp;" << id << ";" << temp  << ";" << name << "\n";
+        }
         
         if ( RF12_WANTS_ACK ) {
             rf12_sendStart(RF12_ACK_REPLY, 0, 0);

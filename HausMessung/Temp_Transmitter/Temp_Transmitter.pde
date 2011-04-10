@@ -304,7 +304,7 @@ void loop(void)
 
     rf12_recvDone();
 
-    if ( ( millis() - last_transmit >= TRANSMIT_RATE ) && rf12_canSend() ) {
+    if ( ( millis() - last_transmit >= TRANSMIT_RATE )) {
 
         // Send the command to get temperatures
         sensors.requestTemperatures();
@@ -315,15 +315,17 @@ void loop(void)
         for(int i=0;i<NUM_DEVICES; i++) {
             if (device_connected[i]==1) {
                 rf12_recvDone();
+                if (rf12_canSend()) {
                 payload.reset();
 
                 float tempC = sensors.getTempC(device_ids[i]);
-                payload << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC << "\n";
-                Serial  << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC << "\n";
+                payload << "Temp" << ";"<< i << ";" << tempC  << ";" << device_names[i];
+                Serial  << "Temp" << ";"<< i << ";" << tempC  << ";" << device_names[i] << "\n";
  
-                byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
+                byte header = RF12_HDR_DST | 1;
                 rf12_sendStart(header, payload.buffer() , payload.length());
                 rf12_sendWait(0);
+                }
             }
         }
 
