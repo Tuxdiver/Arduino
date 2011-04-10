@@ -1,0 +1,65 @@
+#!/opt/bin/perl
+use RRD::Simple;
+use strict;
+
+
+my $temp_rrd_file="/volume1/opt/rrd/temperatur.rrd";
+my $strom_rrd_file="/volume1/opt/rrd/strom.rrd";
+
+# Create an interface object
+my $temp_rrd = RRD::Simple->new(
+        file => $temp_rrd_file,
+        cf => [qw(LAST AVERAGE MIN MAX)],
+        default_dstype => "GAUGE",
+        on_missing_ds => "add",
+         );
+
+
+# Create an interface object
+my $strom_rrd = RRD::Simple->new(
+        file => $strom_rrd_file,
+        cf => [qw(LAST AVERAGE MIN MAX)],
+        default_dstype => "COUNTER",
+        on_missing_ds => "add",
+         );
+ 
+if (!-f $strom_rrd_file) {
+        $strom_rrd->create( $strom_rrd_file, "3years", "Strom"=>"GAUGE", "Strom_data"=>"COUNTER");
+}
+
+
+my @temp;
+
+foreach my $file (glob("/tmp/temp_*.txt")) {
+    print "Reading file $file\n";
+
+    open $in, "<", $file;
+    while(<$in>){
+        chomp();
+        my ($num,$ort,$temperatur) = split(/;/);
+        push @temp, [$ort,$temperatur];
+    }
+}
+
+if (scalar(@temp)) {
+    if (!-f $temp_rrd_file) {
+            $temp_rrd->create( $temp_rrd_file, "3years", map { $_->[0] => "GAUGE" } @temp);
+    }
+
+    $temp_rrd->update(map { $_->[0]=>$_->[1] } @temp );
+}
+
+
+
+open my $in, "<", "/tmp/watt.txt";
+
+my @data=();
+my $ds = "Strom";
+while(<$in>){
+        chomp();
+        push @data, [$ds,$_];
+}
+
+if(scalar(@data)) {
+        $rrd->update(map { $_->[0]=>$_->[1] } @data );
+}
