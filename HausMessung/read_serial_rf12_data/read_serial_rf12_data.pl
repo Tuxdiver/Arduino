@@ -43,19 +43,26 @@ while (1) {
         print "READ: $zeile\n";
 
         # Stromwert gefunden?
-        if ( $zeile =~ m/\A STROM ; (.+?) ; (\d+) ; (\d+) \z/smx ) {
-            my $key   = $1;
-            my $id    = $2;
-            my $value = $3;
+        if ( $zeile =~ m/\A STROM ; WATT ; (\d+) ; (\d+) \z/smx ) {
+            my $id    = $1;
+            my $value = $2;
 
-            # Nur die Wattzahl interessiert hier im Moment
             # Wert in eine Datei schreiben
-            if ( $key eq "WATT" ) {
-                my $fh;
-                open $fh, ">", "/tmp/watt.txt";
-                printf $fh "%d\n", $value;
-                close $fh;
-            }
+            my $fh;
+            open $fh, ">", "/tmp/watt.txt";
+            printf $fh "%d\n", $value;
+            close $fh;
+        }
+
+        if ( $zeile =~ m/\A Temp ; (\d+) ; (\d+\.\d+) ; (.*) \z/smx ) {
+            my $id    = $1;
+            my $value = $2;
+            my $name  = $3;
+
+            my $fh;
+            open $fh, ">", "/tmp/temp_${id}.txt";
+            printf $fh "%d\n", $value;
+            close $fh;
         }
     }
 }
