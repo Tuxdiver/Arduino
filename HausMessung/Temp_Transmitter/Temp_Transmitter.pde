@@ -13,9 +13,19 @@
 
 
 struct {
+    byte typ;
     byte id;    // temp sensor: 0..255
-    int temp;   // temperature * 100
-    char name[20];
+    union {
+      struct {
+        int temp;   // temperature * 100
+        char name[20];
+      } temperatur;
+      struct {
+        int watt;
+        unsigned long count;
+        unsigned long transmittcount;
+      } strom;
+    } data;
 } payload;
 
 
@@ -142,7 +152,7 @@ void setup(void)
 
   last_transmit = millis();
   myId = rf12_config();
-  Serial.println("Setup dne");
+  Serial.println("Setup done");
 }
 
 
@@ -166,12 +176,13 @@ void loop(void)
                 rf12_recvDone();
                 if (rf12_canSend()) {
                 payload.id = i;
-                strncpy((char*)payload.name, device_names[i], 19);
+                payload.typ = 1;
+                strncpy((char*)payload.data.temperatur.name, device_names[i], 19);
                 float tempC = sensors.getTempC(device_ids[i]);
-                payload.temp = (int)(tempC*100);
-                Serial  << "Temp" << ";"<< i << ";" << payload.temp  << ";" << payload.name << "\n";
+                payload.data.temperatur.temp = (int)(tempC*100);
+                Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << "\n";
 
-                byte header = RF12_HDR_DST | 1;
+                byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
                 rf12_sendStart(header, &payload , sizeof(payload));
                 rf12_sendWait(0);
                 }

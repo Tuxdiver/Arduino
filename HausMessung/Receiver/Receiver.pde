@@ -44,6 +44,22 @@ int id;
 float temp;
 char name[100];
 
+struct payload_data {
+    byte typ;
+    byte id;    // temp sensor: 0..255
+    union {
+      struct {
+        int temp;   // temperature * 100
+        char name[20];
+      } temperatur;
+      struct {
+        int watt;
+        unsigned long count;
+        unsigned long transmittcount;
+      } strom;
+    } data;
+};
+
 void loop()
 {
 
@@ -51,30 +67,12 @@ void loop()
         // LED an
         led.digiWrite(1);
 
-        char *buf;
-        buf = (char *)rf12_data;
-        buf[rf12_len] = 0;
+        struct payload_data  *data;
+        data = (struct payload_data *)rf12_data;
 
-        Serial << "# INPUT:" << buf << "\n";
-        id = -1;
-
-        // Strom?
-        sscanf((char *)buf, "Strom;%d;%lu;%lu;%lu;%lu", &id, &watt, &count, &time, &txcounter);
-        if ( id != -1) {
-            //Serial << "# Strom :" << (char *)buf << ":\n";
-            Serial << "STROM;WATT;" << id << ";" << watt  << "\n";
-            Serial << "STROM;COUNT;" << id << ";" << count << "\n";
-            Serial << "STROM;TIME;" << id << ";" << time  << "\n";
-            Serial << "STROM;TXCOUNT;" << id << ";" << txcounter  << "\n";
-        } 
-
-     
-        id=-1;
-        // Strom?
-        sscanf((char *)buf, "Temp;%d;%.2f;%s", &id, &temp, &name) ;
-        if (id != -1) {
-            //Serial << "# Temp :" << (char *)buf << ":\n";
-            Serial << "Temp;" << id << ";" << temp  << ";" << name << "\n";
+        if (data->typ == 1) {
+          float temp = (float)(data->data.temperatur.temp) / 100.00;
+          Serial << "Temp;" << (int)data->id << ";" << temp  << ";" << data->data.temperatur.name << "\n";
         }
         
         if ( RF12_WANTS_ACK ) {
