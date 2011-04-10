@@ -60,10 +60,10 @@ while (1) {
             my $value = $2;
             my $name  = $3;
 
-            print STDERR "Found Temp: id=$id, Temp=$value\n";
+            print STDERR "Found Temp: id=$id, Temp=$value, Name=$name\n";
             my $fh;
             open $fh, ">", "/tmp/temp_${id}.txt";
-            printf $fh "%f\n", $value;
+            printf $fh "%d;%s;%f\n", $id, $name, $value;
             close $fh;
         }
     }
