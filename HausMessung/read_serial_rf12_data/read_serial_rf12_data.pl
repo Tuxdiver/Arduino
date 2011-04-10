@@ -40,7 +40,7 @@ while (1) {
     if ( $string =~ /\n/smx ) {
         $string =~ s/\A (.*?) \n (.*) \z/$2/smx;
         my $zeile = $1;
-        print "READ: $zeile\n";
+        print STDERR "READ: $zeile\n";
 
         # Stromwert gefunden?
         if ( $zeile =~ m/\A Strom ; WATT ; (\d+) ; (\d+) \z/smx ) {
