@@ -40,10 +40,10 @@ while (1) {
     if ( $string =~ /\n/smx ) {
         $string =~ s/\A (.*?) \n (.*) \z/$2/smx;
         my $zeile = $1;
-        print "READ: $zeile\n";
+        print STDERR "READ: $zeile\n";
 
         # Stromwert gefunden?
-        if ( $zeile =~ m/\A STROM ; WATT ; (\d+) ; (\d+) \z/smx ) {
+        if ( $zeile =~ m/\A Strom ; WATT ; (\d+) ; (\d+) \z/smx ) {
             my $id    = $1;
             my $value = $2;
             print STDERR "Found Strom: Watt=$value\n";
@@ -63,7 +63,7 @@ while (1) {
             print STDERR "Found Temp: id=$id, Temp=$value\n";
             my $fh;
             open $fh, ">", "/tmp/temp_${id}.txt";
-            printf $fh "%d\n", $value;
+            printf $fh "%f\n", $value;
             close $fh;
         }
     }
