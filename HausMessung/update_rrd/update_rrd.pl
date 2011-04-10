@@ -1,7 +1,7 @@
 #!/opt/bin/perl
-use RRD::Simple;
 use strict;
-
+use RRD::Simple;
+use Data::Dumper;
 
 my $temp_rrd_file="/volume1/opt/rrd/temperatur.rrd";
 my $strom_rrd_file="/volume1/opt/rrd/strom.rrd";
@@ -33,7 +33,7 @@ my @temp;
 foreach my $file (glob("/tmp/temp_*.txt")) {
     print "Reading file $file\n";
 
-    open $in, "<", $file;
+    open my $in, "<", $file;
     while(<$in>){
         chomp();
         my ($num,$ort,$temperatur) = split(/;/);
@@ -48,7 +48,7 @@ if (scalar(@temp)) {
 
     $temp_rrd->update(map { $_->[0]=>$_->[1] } @temp );
 }
-
+print Dumper(\@temp);
 
 
 open my $in, "<", "/tmp/watt.txt";
@@ -61,5 +61,7 @@ while(<$in>){
 }
 
 if(scalar(@data)) {
-        $rrd->update(map { $_->[0]=>$_->[1] } @data );
+        $strom_rrd->update(map { $_->[0]=>$_->[1] } @data );
 }
+print Dumper(\@data);
+
