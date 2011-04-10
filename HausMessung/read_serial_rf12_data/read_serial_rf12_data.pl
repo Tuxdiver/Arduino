@@ -46,6 +46,7 @@ while (1) {
         if ( $zeile =~ m/\A STROM ; WATT ; (\d+) ; (\d+) \z/smx ) {
             my $id    = $1;
             my $value = $2;
+            print STDERR "Found Strom: Watt=$value\n";
 
             # Wert in eine Datei schreiben
             my $fh;
@@ -59,6 +60,7 @@ while (1) {
             my $value = $2;
             my $name  = $3;
 
+            print STDERR "Found Temp: id=$id, Temp=$value\n";
             my $fh;
             open $fh, ">", "/tmp/temp_${id}.txt";
             printf $fh "%d\n", $value;
