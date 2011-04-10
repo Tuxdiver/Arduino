@@ -273,7 +273,7 @@ void setup(void)
   /* initialize the Ethernet adapter */
   Ethernet.begin(mac, ip);
 
-  myId = rf12_config();
+
 
 
   /* setup our default command that will be run when the user accesses
@@ -289,7 +289,8 @@ void setup(void)
   webserver.begin();
 
   last_transmit = millis();
-
+  myId = rf12_config();
+  Serial.println("Setup dne");
 }
 
 
@@ -310,18 +311,23 @@ void loop(void)
 
         // Loop through each device, print out temperature data for ( int i = 0; i < NUM_DEVICES; i++ ) {
         // server << i << device_connected [i] <<"<br>";
-        payload.reset();
+
         for(int i=0;i<NUM_DEVICES; i++) {
             if (device_connected[i]==1) {
+                rf12_recvDone();
+                payload.reset();
+
                 float tempC = sensors.getTempC(device_ids[i]);
-                payload << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC;
+                payload << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC << "\n";
+                Serial  << "Temp" << ";"<< i << ";" << device_names[i] << ";" << tempC << "\n";
+ 
+                byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
+                rf12_sendStart(header, payload.buffer() , payload.length());
+                rf12_sendWait(0);
             }
         }
 
-        byte header = RF12_HDR_ACK;
-        header |= RF12_HDR_DST | 1;
-        rf12_sendStart(header, payload.buffer() , payload.length());
-        rf12_sendWait(0);
+
 
         last_transmit = millis();
     }

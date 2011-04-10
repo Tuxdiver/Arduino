@@ -41,6 +41,9 @@ unsigned long time;
 unsigned long txcounter;
 int id;
 
+float temp;
+char name[100];
+
 void loop()
 {
 
@@ -52,24 +55,28 @@ void loop()
         buf = (char *)rf12_data;
         buf[rf12_len] = 0;
 
-        id = 0;
+        Serial << "# INPUT:" << buf << "\n";
+        id = -1;
 
         // Strom?
         sscanf((char *)buf, "Strom;%d;%lu;%lu;%lu;%lu", &id, &watt, &count, &time, &txcounter);
-        if ( id ) {
-            Serial << "# Strom :" << (char *)buf << ":\n";
+        if ( id != -1) {
+            //Serial << "# Strom :" << (char *)buf << ":\n";
             Serial << "STROM;WATT;" << id << ";" << watt  << "\n";
             Serial << "STROM;COUNT;" << id << ";" << count << "\n";
             Serial << "STROM;TIME;" << id << ";" << time  << "\n";
             Serial << "STROM;TXCOUNT;" << id << ";" << txcounter  << "\n";
-        }
+        } 
 
-        // Unbekannter Datensatz
-        if ( !id ) {
-            Serial << "# Unknown data :" << (char *)buf << ":\n";
-        }
-
-
+     
+        id=-1;
+        // Strom?
+        sscanf((char *)buf, "Temp;%d;%s;%f", &id, &name, &temp) ;
+        if (id != -1) {
+            //Serial << "# Temp :" << (char *)buf << ":\n";
+            Serial << "Temp;" << name << ";" << id << ";" << temp  << "\n";
+        } 
+        
         if ( RF12_WANTS_ACK ) {
             rf12_sendStart(RF12_ACK_REPLY, 0, 0);
         }
