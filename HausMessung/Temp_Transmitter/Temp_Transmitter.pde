@@ -4,39 +4,13 @@
 #include <Ports.h>
 #include <RF12.h>
 
+#include "hausmessung.h"
 
 // Data wire is plugged into port 3 on the Arduino
 #define ONE_WIRE_BUS 3
 #define TEMPERATURE_PRECISION 12
 
 #define TRANSMIT_RATE   1000
-
-
-struct {
-    byte typ;
-    byte id;    // temp sensor: 0..255
-    union {
-      struct {
-        int temp;   // temperature * 100
-        char name[20];
-      } temperatur;
-      struct {
-        int watt;
-        unsigned long count;
-        unsigned long transmittcount;
-      } strom;
-    } data;
-} payload;
-
-
-// no-cost stream operator as described at
-// http://sundial.org/arduino/?page_id=119
-template<class T>
-inline Print &operator <<(Print &obj, T arg)
-{
-  obj.print(arg);
-  return obj;
-}
 
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -98,6 +72,8 @@ char* device_names[NUM_DEVICES] = {
 byte myId;
 unsigned long last_transmit = 0;
 unsigned long tx_counter=0;
+
+struct payload_data payload;
 
 
 void init_temp(void) {
@@ -178,8 +154,7 @@ void loop(void)
                 payload.id = i;
                 payload.typ = 1;
                 strncpy((char*)payload.data.temperatur.name, device_names[i], 19);
-                float tempC = sensors.getTempC(device_ids[i]);
-                payload.data.temperatur.temp = (int)(tempC*100);
+                payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
                 Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << "\n";
 
                 byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;

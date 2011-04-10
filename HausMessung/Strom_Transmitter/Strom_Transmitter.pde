@@ -9,60 +9,14 @@
 
 #include <Ports.h>
 #include <RF12.h>
-#include <util/crc16.h>
-#include <util/parity.h>
-#include <avr/eeprom.h>
-#include <avr/pgmspace.h>
+
+#include "hausmessung.h"
 
 #define SCHWELLWERT_IN   300
 #define SCHWELLWERT_OUT  250
 #define TRANSMIT_RATE   1000
 
 #define REFLEX_DEBUG 1
-
-
-// Utility class to fill a buffer with string data
-class PacketBuffer : public Print {
-public:
-    PacketBuffer () : fill (0) {
-    }
-
-    const byte* buffer() {
-        return buf;
-    }
-
-    byte length() {
-        return fill;
-    }
-
-    void reset() {
-        fill = 0;
-    }
-
-    const char* print() {
-        buf[fill]=0;
-        return (char *)buf;
-    }
-
-    virtual void write(uint8_t ch)
-    {
-        if (fill < sizeof buf) buf[fill++] = ch;
-    }
-
-    private:
-        byte fill, buf[RF12_MAXDATA];
-};
-
-
-// no-cost stream operator as described at
-// http://sundial.org/arduino/?page_id=119
-template<class T>
-inline Print &operator <<(Print &obj, T arg)
-{
-    obj.print(arg);
-    return obj;
-}
-
 
 
 unsigned long watt = 0;
@@ -77,8 +31,6 @@ unsigned long tx_counter=0;
 
 Port strom (1);
 byte myId;
-PacketBuffer payload;   // temp buffer to send out
-
 int insend=0;
 
 
@@ -92,6 +44,7 @@ void setup()
     strom.mode(OUTPUT);
 }
 
+struct payload_data payload;
 
 void loop()
 {
@@ -177,16 +130,16 @@ void loop()
 
         tx_counter++;
 
-        payload.reset();
-        payload << "Strom" << ";"<< 1 << ";" << watt << ";" << counter << ";" << time << ";" << tx_counter;
+        payload.typ = 2;
+        payload.id = 1;
+        payload.data.strom.watt = watt;
+        payload.data.strom.count = counter;
+        payload.data.strom.tx_count = tx_counter;
 
-        #if REFLEX_DEBUG > 0
-            Serial << "Transmit: " << payload.print() << "\n";
-        #endif
+        Serial  << "Strom: " << payload.data.strom.watt  << ";" << payload.data.strom.count << ";"<< payload.data.strom.tx_count << "\n";
 
-        byte header = RF12_HDR_ACK;
-        header |= RF12_HDR_DST | 1;
-        rf12_sendStart(header, payload.buffer() , payload.length());
+        byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
+        rf12_sendStart(header, &payload, sizeof payload);
         rf12_sendWait(0);
 
         last_transmit = millis();

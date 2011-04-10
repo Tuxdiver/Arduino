@@ -5,6 +5,8 @@
 </file>
 <file id="24b049e2-d177-a040-a1e3-8daf06e20450" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="Temp_Transmitter.pde" url="HausMessung/Temp_Transmitter/Temp_Transmitter.pde">
 </file>
+<file id="4908fa9c-75b2-db4e-a1f9-d6434324f074" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="hausmessung.h" url="HausMessung/hausmessung.h">
+</file>
 <file id="5331b0ef-db83-ae44-b5fb-93d5672472aa" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="Strom_Transmitter.pde" url="HausMessung/Strom_Transmitter/Strom_Transmitter.pde">
 </file>
 <file id="67da3387-bb0a-ad48-9168-baeba45901f7" idref="9b120cb2-1cb4-5147-9456-7b21aef52236" name="read_serial_rf12_data.pl" url="HausMessung/read_serial_rf12_data/read_serial_rf12_data.pl">
