@@ -77,7 +77,7 @@ void loop()
             watt = int(48000000/timediff);
 
             // only accept values below 15kw
-            if (watt < 15000) {
+            if (watt < 20000) {
                 #if REFLEX_DEBUG > 0
                     Serial << "Calc watt: "<< watt << "last" << last_pulse << " now " << time << " diff " << timediff  << " millis\n";
                 #endif

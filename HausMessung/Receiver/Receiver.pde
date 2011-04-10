@@ -34,7 +34,7 @@ void loop()
         data = (struct payload_data *)rf12_data;
 
         if (data->typ == 1) {
-          float temp = (float)(data->data.temperatur.temp) / 100.00;
+          float temp = data->data.temperatur.temp;
           Serial << "Temp;" << (int)data->id << ";" << temp  << ";" << data->data.temperatur.name << "\n";
         }
 
