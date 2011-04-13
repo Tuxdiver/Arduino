@@ -39,6 +39,8 @@ foreach my $file (glob("/tmp/temp_*.txt")) {
         my ($num,$ort,$temperatur) = split(/;/);
         push @temp, [$ort,$temperatur];
     }
+    close $in;
+    unlink $file;
 }
 
 if (scalar(@temp)) {
@@ -47,21 +49,26 @@ if (scalar(@temp)) {
     }
 
     $temp_rrd->update(map { $_->[0]=>$_->[1] } @temp );
+	print Dumper(\@temp);
 }
-print Dumper(\@temp);
 
 
-open my $in, "<", "/tmp/watt.txt";
-
+# Watt lesen
 my @data=();
-my $ds = "Strom";
-while(<$in>){
-        chomp();
-        push @data, [$ds,$_];
-}
+foreach my $file (glob("/tmp/watt.txt*")) {
+	print "Reading file $file\n";
+	open my $in, "<", $file;     
+	my $ds = "Strom";
+	while(<$in>){
+	       	chomp();
+        	push @data, [$ds,$_];
+	}
+	close $in;
+	unlink $file;         
+}                                                                                                 
 
 if(scalar(@data)) {
         $strom_rrd->update(map { $_->[0]=>$_->[1] } @data );
+	print Dumper(\@data);
 }
-print Dumper(\@data);
 
