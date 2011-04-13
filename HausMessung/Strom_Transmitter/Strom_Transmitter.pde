@@ -16,7 +16,7 @@
 #define SCHWELLWERT_OUT  250
 #define TRANSMIT_RATE   5000
 
-#define REFLEX_DEBUG 1
+#define REFLEX_DEBUG 0
 
 
 unsigned long watt = 0;
@@ -139,7 +139,8 @@ void loop()
 
         Serial  << "Strom: " << payload.data.strom.watt  << ";" << payload.data.strom.count << ";"<< payload.data.strom.tx_count << "\n";
 
-        byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
+        // byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;        
+        byte header = RF12_HDR_DST | 1;
         rf12_sendStart(header, &payload, sizeof payload);
         rf12_sendWait(0);
 
