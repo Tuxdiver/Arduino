@@ -14,7 +14,7 @@
 
 #define SCHWELLWERT_IN   300
 #define SCHWELLWERT_OUT  250
-#define TRANSMIT_RATE   1000
+#define TRANSMIT_RATE   5000
 
 #define REFLEX_DEBUG 1
 
@@ -45,7 +45,7 @@ void setup()
 }
 
 struct payload_data payload;
-
+int send_now = 0;
 void loop()
 {
 
@@ -86,6 +86,7 @@ void loop()
                 last_pulse = time;
                 insend = 1;
                 counter = counter + 1;
+                send_now = 1;
             }
             else {
               Serial << "Unsinniger Watt-Wert: " << watt << " wurde verworfen\n";
@@ -123,7 +124,7 @@ void loop()
 
     // Send the "Watt" to the receiver
     rf12_recvDone();
-    if((watt > 0) && (millis() - last_transmit >= TRANSMIT_RATE) && rf12_canSend()) {
+    if((watt > 0) && (send_now == 1 || (millis() - last_transmit >= TRANSMIT_RATE)) && rf12_canSend()) {
 
         // Blink the LED
         strom.digiWrite(1);
@@ -143,12 +144,9 @@ void loop()
         rf12_sendWait(0);
 
         last_transmit = millis();
-
+        send_now = 0;
+        
         // sleep a little and switch of LED
-        delay(10);
         strom.digiWrite(0);
     }
-
-    // a little delay
-    delay(10);
 }

@@ -7,7 +7,7 @@
 #include "hausmessung.h"
 
 // Data wire is plugged into port 3 on the Arduino
-#define ONE_WIRE_BUS 3
+#define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 12
 
 #define TRANSMIT_RATE   1000
@@ -95,7 +95,7 @@ void init_temp(void) {
   for(int i=0;i<NUM_DEVICES; i++)
   {
     // Search the wire for address
-    if(sensors.isConnected(device_ids[i]))
+    if(numberOfDevices > 0 && sensors.isConnected(device_ids[i]))
     {
       device_connected[i]=1;
       Serial.print("Found device ");
