@@ -30,6 +30,9 @@ unsigned long tx_counter=0;
 
 
 Port strom (1);
+Port heartbeat (2);
+Port transmitter (3);
+
 byte myId;
 int insend=0;
 
@@ -42,10 +45,16 @@ void setup()
     myId = rf12_config();
 
     strom.mode(OUTPUT);
+    transmitter.mode(OUTPUT);
+    heartbeat.mode(OUTPUT);
 }
 
 struct payload_data payload;
+
 int send_now = 0;
+int heartbeat_status = 0;
+int heartbeat_count = 0;
+
 void loop()
 {
 
@@ -61,11 +70,11 @@ void loop()
     // Serial.println(a);
 
     if(a >= SCHWELLWERT_IN && insend==0) {
+       strom.digiWrite(true); // Flash a light to show transmitting
 
         #if REFLEX_DEBUG > 0
             Serial.print("In: ");
             Serial.println(a);
-            strom.digiWrite(true); // Flash a light to show transmitting
         #endif
 
         time = millis();
@@ -116,8 +125,8 @@ void loop()
                 Serial.print("Out: ");
                 Serial.println(a);
             }
-            strom.digiWrite(false);
         #endif
+        strom.digiWrite(false);
         insend = 0;
     }
 
@@ -127,7 +136,7 @@ void loop()
     if((watt > 0) && (send_now == 1 || (millis() - last_transmit >= TRANSMIT_RATE)) && rf12_canSend()) {
 
         // Blink the LED
-        strom.digiWrite(1);
+        transmitter.digiWrite(1);
 
         tx_counter++;
 
@@ -139,15 +148,22 @@ void loop()
 
         Serial  << "Strom: " << payload.data.strom.watt  << ";" << payload.data.strom.count << ";"<< payload.data.strom.tx_count << "\n";
 
-        // byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;        
+        // byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
         byte header = RF12_HDR_DST | 1;
         rf12_sendStart(header, &payload, sizeof payload);
         rf12_sendWait(0);
 
         last_transmit = millis();
         send_now = 0;
-        
-        // sleep a little and switch of LED
-        strom.digiWrite(0);
+
+        // switch of LED
+        transmitter.digiWrite(0);
+    }
+
+    heartbeat_count++;
+    if (heartbeat_count > 1000) {
+        heartbeat.digiWrite(heartbeat_status);
+        heartbeat_count = 0;
+        heartbeat_status = not heartbeat_status;
     }
 }
