@@ -3,7 +3,7 @@ struct payload_data {
     byte id; // sensor id: 0..255
     union {
       struct {
-        float temp; // temperature * 100
+        float temp;
         char name[20];
       } temperatur;
       struct {
