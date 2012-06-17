@@ -7,44 +7,34 @@ use LWP::UserAgent;
 use HTTP::Request;
 use Data::Dumper;
 
+my $api_key = $ENV{COSM_API_KEY} // die "ENV-Variable COSM_API_KEY not set!";
+my $feed_id = '62684';
 
 $| = 1;
 
 my %mapping = (
         '284ee6fa010000ff' => { 
 		name => "KG: On Board",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
                 stream_id => '1',
         },
         '2832c4fa01000061' => { 
 		name => "EG: Treppe",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
                 stream_id => '2',
         },
         '28220c7202000007' => { 
-		name => "xxx",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
+		name => "DG: 1",
                 stream_id => '3',
         },
         '2831d1fa01000096' => { 
-		name => "xxx",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
+		name => "DG: 2",
                 stream_id => '4',
         },
         '286502fb010000fb' => { 
 		name => "KG",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
                 stream_id => '5',
         },
         '281d1fcb0100001a' => { 
 		name => "KG: Heizung",
-                feed_id => 62684,
-                api_key => 'JMjC1gMAojAGzXsax3vDkdtHV3ySAKx1dUNObmdHTHdDND0g',
                 stream_id => '6',
         },
 
@@ -106,11 +96,14 @@ while (1) {
             my $value = $2;
             my $name  = $3;
 
-            # print STDERR "Found Temp: id=$id, Temp=$value, Name=$name\n";
 		if (exists $mapping{$name}) {
 			if (!exists $last_data{$name} || $last_data{$name}->{time} + 60 < time()) {
 				print STDERR "Send $value for $name to cosm\n";
-				my $result = send_to_cosm({data=>[$mapping{$name}->{stream_id} => $value], api_key=>$mapping{$name}->{api_key}, method=>'PUT', feed_id => $mapping{$name}->{feed_id}});
+				my $result = send_to_cosm({data=>[$mapping{$name}->{stream_id} => $value], 
+					api_key=>$mapping{$name}->{api_key} // $api_key, 
+					method=>'PUT', 
+					feed_id => $mapping{$name}->{feed_id} // $feed_id,
+				});
 				if (!$result) {
 					print "Update of cosm failed!\n";
 				} else {
