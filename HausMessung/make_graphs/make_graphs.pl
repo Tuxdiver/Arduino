@@ -5,15 +5,15 @@ use strict;
 $RRD::Simple::DEBUG=0;
 $|=1;
 
-system("/volume1/opt/rrd/stromgraph.sh");
+#system("/volume1/opt/rrd/stromgraph.sh");
 
-my $dest = "/volume1/web";
+my $dest = "/opt/HausMessung/web";
 my @periods = qw( hour 6hour 12hour day week month year 3years);
 my %trends = ("hour"=>600, "6hour"=>1800, "12hour"=>2400, "day"=>3600, "week"=>3600*12, "month"=>3600*24*2, "year"=>3600*24*10, "3years"=>3600*24*30);
 
 
-my $rrd_file_temp="/volume1/opt/rrd/temperatur.rrd";
-my $rrd_file_strom="/volume1/opt/rrd/strom.rrd";
+my $rrd_file_temp="/opt/HausMessung/rrd/temperatur.rrd";
+my $rrd_file_strom="/opt/HausMessung/rrd/strom.rrd";
 
 # Create an interface object
 my $rrd_temp = RRD::Simple->new(

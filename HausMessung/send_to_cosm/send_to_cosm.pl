@@ -1,34 +1,14 @@
 #!/opt/bin/perl
 use strict;
-use RRD::Simple;
 use Data::Dumper;
 
-my $temp_rrd_file="/opt/HausMessung/rrd/temperatur.rrd";
-my $strom_rrd_file="/opt/HausMessung/rrd/strom.rrd";
-
-# Create an interface object
-my $temp_rrd = RRD::Simple->new(
-        file => $temp_rrd_file,
-        cf => [qw(LAST AVERAGE MIN MAX)],
-        default_dstype => "GAUGE",
-        on_missing_ds => "add",
-         );
-
-
-# Create an interface object
-my $strom_rrd = RRD::Simple->new(
-        file => $strom_rrd_file,
-        cf => [qw(LAST AVERAGE MIN MAX)],
-        default_dstype => "COUNTER",
-        on_missing_ds => "add",
-         );
- 
-if (!-f $strom_rrd_file) {
-        $strom_rrd->create( $strom_rrd_file, "3years", "Strom"=>"GAUGE", "Strom_data"=>"COUNTER");
-}
-
-
 my @temp;
+
+
+%mapping = (
+
+
+);
 
 foreach my $file (glob("/tmp/temp_*.txt")) {
     print "Reading file $file\n";
@@ -44,10 +24,6 @@ foreach my $file (glob("/tmp/temp_*.txt")) {
 }
 
 if (scalar(@temp)) {
-    if (!-f $temp_rrd_file) {
-            $temp_rrd->create( $temp_rrd_file, "3years", map { $_->[0] => "GAUGE" } @temp);
-    }
-
     $temp_rrd->update(map { $_->[0]=>$_->[1] } @temp );
 	print Dumper(\@temp);
 }
