@@ -8,8 +8,8 @@ use HTTP::Request;
 use Data::Dumper;
 
 my $api_key = $ENV{COSM_API_KEY} // die "ENV-Variable COSM_API_KEY not set!";
-my $feed_id = '62684';
-#my $feed_id = '1483031049';
+#my $feed_id = '62684';
+my $feed_id = '1483031049';
 
 $| = 1;
 
@@ -83,7 +83,7 @@ while (1) {
     if ( $string =~ /\n/smx ) {
         $string =~ s/\A (.*?) \n (.*) \z/$2/smx;
         my $zeile = $1;
-        print STDERR "READ: $zeile\n";
+        #print STDERR "READ: $zeile\n";
 
         # Luefter gefunden?
         if ( $zeile =~ m/\A Luefter ; DREHZAHL ; (\d+) ; (\d+) \z/smx ) {
@@ -140,24 +140,21 @@ while (1) {
 sub send_to_cosm {
 	my $options = shift;
 
-	#my $api_key = $options->{api_key};
-	#my $method = $options->{method};
-	#my $feed_id = $options->{feed_id};
-	#my $url = 'http://api.cosm.com/v2/feeds/'.$feed_id.'.csv';
-
+	my $api_key = $options->{api_key};
+	my $method = $options->{method};
+	my $feed_id = $options->{feed_id};
+	my $url = 'http://api.cosm.com/v2/feeds/'.$feed_id.'.csv';
 	my @data = @{$options->{data}};
 
-	#my $ua = LWP::UserAgent->new();
-	#$ua->default_header('X-ApiKey' => $api_key);
-	#my $request = HTTP::Request->new($method => $url);
-	#$request->content(join(",", @data));
-	print Dumper \@data;
+	my $ua = LWP::UserAgent->new();
+	$ua->default_header('X-ApiKey' => $api_key);
+	my $request = HTTP::Request->new($method => $url);
+	$request->content(join(",", @data));
 	#print Dumper $ua;
 	#print Dumper $request;
-	#my $resp =  $ua->request($request);
+	my $resp =  $ua->request($request);
 	#print Dumper $resp;
 
-	#return $resp->is_success;
-	return 1;
+	return $resp->is_success;
 }
 
