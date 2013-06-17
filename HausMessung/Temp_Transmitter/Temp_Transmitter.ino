@@ -103,7 +103,7 @@ void loop(void)
           payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
           Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << "\n";
 
-          byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
+          byte header = RF12_HDR_DST | 1;
           rf12_sendStart(header, &payload , sizeof(payload));
           rf12_sendWait(0);
         }

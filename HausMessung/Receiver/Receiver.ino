@@ -41,7 +41,10 @@ void loop()
         if (data->typ == 2) {
           Serial << "Strom;WATT;" << (int)data->id << ";" << data->data.strom.watt << "\n";
         }
-
+        if (data->typ == 3) {
+          Serial << "Luefter;DREHZAHL;" << (int)data->id << ";" << data->data.luefter.drehzahl << "\n";
+          Serial << "Luefter;DUTY;" << (int)data->id << ";" << data->data.luefter.duty << "\n";
+        }
 
         if ( RF12_WANTS_ACK ) {
             rf12_sendStart(RF12_ACK_REPLY, 0, 0);
