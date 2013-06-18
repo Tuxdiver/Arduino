@@ -30,7 +30,7 @@ my $rrd_luefter = RRD::Simple->new(
 
 
 
-my @wanted_temp = ("KGHeizung","KGOnBoard","KG", "EGTreppe", "DG1", "DG2", "Aquarium");
+my @wanted_temp = ("KGHeizung","KGOnBoard","KG", "EGTreppe", "DG1", "DG2", "Aquarium","AquariumAussen");
 my @wanted_strom = reverse qw (Strom);
 my @wanted_luefter = reverse qw (Luefter);
 
@@ -71,6 +71,17 @@ foreach my $period (@periods) {
 		width=>500,
 		height=>200,
 		);
+
+        print "Generate aquarium $period\n";
+        $rrd_temp->graph(
+                destination => "$dest/temp",
+                extended_legend => 1,
+                periods => [ $period ],
+                sources => [ "Aquarium" , "AquariumAussen"],
+                basename => "aquarium",
+                width=>500,
+                height=>200,
+                );
 
 	print "Generate luefter $period\n";
 	$rrd_luefter->graph(
