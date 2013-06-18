@@ -1,3 +1,5 @@
+#include <Streaming.h>
+
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
@@ -61,16 +63,6 @@ void inc_rpm1() {
 }
 
 
-// no-cost stream operator as described at
-// http://sundial.org/arduino/?page_id=119
-template<class T>
-inline Print &operator <<(Print &obj, T arg)
-{
-  obj.print(arg);
-  return obj;
-}
-
-
 void init_temp(void) {
   // Start up the library
   sensors.begin();
@@ -99,6 +91,7 @@ void init_temp(void) {
 
     i++;
   }
+  number_of_devices = i;
 }
 
 
@@ -138,8 +131,6 @@ void setup() {
 
 
 void loop() {
-  float temp;
-  
   rf12_recvDone();
 
   // read the input on analog pin 0:
@@ -147,7 +138,6 @@ void loop() {
   sensorValue = map(sensorValue,0,1023,29,80); 
   if (sensorValue >= 30) {
     digitalWrite(4,HIGH);
-    //OCR2B = sensorValue;
     OCR1A = sensorValue;
   } 
   else {
@@ -156,6 +146,7 @@ void loop() {
   }
 
   int time_now = millis();
+
   if (time_now - last_read > 5000) {
     float time_faktor = (time_now-last_read) / 1000.0;
     rpm1 = rpm1_counter * 30 / time_faktor;
@@ -165,47 +156,42 @@ void loop() {
 
     // Send the command to get temperatures
     sensors.requestTemperatures();
-    for(int i=0;i<number_of_devices; i++) {
+    delay(50);
+    for(int i = 0; i < number_of_devices; i++) {
       if (device_ids[i]) {
-         if (rf12_canSend()) {
-           device_address_to_string(device_ids[i]);
-           temp = sensors.getTempC(device_ids[i]);
-           payload.id = 31;
-           payload.typ = 1;
-           strncpy((char*)payload.data.temperatur.name, tmp_device_name, 17);
-           payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
-           Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << "\n";
-           byte header = RF12_HDR_DST | 1;
-      
+        rf12_recvDone();
+        if (rf12_canSend()) {
+          payload.id = 31;
+          payload.typ = 1;
+          device_address_to_string(device_ids[i]);
+          strncpy((char*)payload.data.temperatur.name, tmp_device_name, 17);
+          payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
+          Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << endl;
+
+          byte header = RF12_HDR_DST | 1;
           rf12_sendStart(header, &payload , sizeof(payload));
           rf12_sendWait(0);
           delay(100);
         }
       }
     }
-    rf12_recvDone();
 
+    rf12_recvDone();
     if (rf12_canSend()) {
       payload.id = 31;
       payload.typ = 3;
       payload.data.luefter.drehzahl = rpm1;
       payload.data.luefter.duty = sensorValue;
-      // byte header = RF12_HDR_ACK | RF12_HDR_DST | 1;
-      byte header = RF12_HDR_DST | 1;
-      
+
+      byte header = RF12_HDR_DST | 1;      
       rf12_sendStart(header, &payload , sizeof(payload));
       rf12_sendWait(0);
     }
 
-    Serial.print("duty cycle: ");
-    Serial.print(sensorValue);
-    Serial.print(" RPM: ");
-    Serial.print(rpm1_counter);
-    Serial.print(" ");
-    Serial.println(rpm1); 
+    Serial << "Luefter: " << sensorValue << " RPM: " << rpm1_counter << " " << rpm1 << endl; 
   }
 
-  delay(100);      
+  delay(10);
 }
 
 
@@ -223,10 +209,11 @@ void printAddress(DeviceAddress deviceAddress)
 void device_address_to_string(DeviceAddress deviceAddress)
 {
   sprintf(tmp_device_name, "%02x%02x%02x%02x%02x%02x%02x%02x", 
-              deviceAddress[0],deviceAddress[1],deviceAddress[2],deviceAddress[3],
-              deviceAddress[4],deviceAddress[5],deviceAddress[6],deviceAddress[7]);
+  deviceAddress[0],deviceAddress[1],deviceAddress[2],deviceAddress[3],
+  deviceAddress[4],deviceAddress[5],deviceAddress[6],deviceAddress[7]);
   tmp_device_name[16]=0;
 }
+
 
 
 
