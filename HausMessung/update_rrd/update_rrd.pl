@@ -31,15 +31,17 @@ my $strom_rrd = RRD::Simple->new(
         default_dstype => "COUNTER",
         on_missing_ds => "add",
          );
- 
+
 if (!-f $strom_rrd_file) {
-        $strom_rrd->create( $strom_rrd_file, "3years", "Strom"=>"GAUGE", "Strom_data"=>"COUNTER");
+    $strom_rrd->create( $strom_rrd_file, "3years", "Strom"=>"GAUGE", "Strom_data"=>"COUNTER");
 }
 
 if (!-f $luefter_rrd_file) {
-        $luefter_rrd->create( $luefter_rrd_file, "3years", "Luefter"=>"GAUGE" );
+    $luefter_rrd->create( $luefter_rrd_file, "3years", "Luefter"=>"GAUGE" );
 }
-
+    if (!-f $temp_rrd_file) {
+        $temp_rrd->create( $temp_rrd_file, "3years",  dummy => "GAUGE");
+    }
 
 my @temp;
 foreach my $file (glob("/tmp/temp_*.txt")) {
@@ -54,14 +56,10 @@ foreach my $file (glob("/tmp/temp_*.txt")) {
     close $in;
     unlink $file;
 }
+#print Dumper \@temp;
 
 if (scalar(@temp)) {
-    if (!-f $temp_rrd_file) {
-            $temp_rrd->create( $temp_rrd_file, "3years", map { $_->[0] => "GAUGE" } @temp);
-    }
-
     $temp_rrd->update(map { $_->[0]=>$_->[1] } @temp );
-	print Dumper(\@temp);
 }
 
 my @luefter;
@@ -76,9 +74,10 @@ foreach my $file (glob("/tmp/luefter.txt*")) {
     unlink $file;
 }
 
-if (scalar(@temp)) {
-    $luefter_rrd->update(map { $_->[0]=>$_->[1] } @luefter );
-	print Dumper(\@temp);
+if (scalar(@luefter)) {
+    my $result=$luefter_rrd->update(map { $_->[0]=>$_->[1] } @luefter );
+    #print Dumper $result;
+	#print Dumper(\@luefter);
 }
 
 
@@ -86,15 +85,15 @@ if (scalar(@temp)) {
 my @data=();
 foreach my $file (glob("/tmp/watt.txt*")) {
 	print "Reading file $file\n";
-	open my $in, "<", $file;     
+	open my $in, "<", $file;
 	my $ds = "Strom";
 	while(<$in>){
 	       	chomp();
         	push @data, [$ds,$_];
 	}
 	close $in;
-	unlink $file;         
-}                                                                                                 
+	unlink $file;
+}
 
 if(scalar(@data)) {
         $strom_rrd->update(map { $_->[0]=>$_->[1] } @data );
