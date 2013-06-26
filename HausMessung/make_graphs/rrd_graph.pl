@@ -49,8 +49,9 @@ my %dsnames_luefter = map { $_ => 1 } @dsnames_luefter;
 @wanted_strom = grep { $dsnames_strom{$_} } @wanted_strom;
 @wanted_luefter = grep { $dsnames_luefter{$_} } @wanted_luefter;
 
+my $mtime=(stat "$dest/temp/aquarium-hourly.png")[9];
 
-
+if (time() - $mtime > 120) {
 foreach my $period (@periods) {
         my $trend=$trends{$period};
 
@@ -112,19 +113,23 @@ foreach my $period (@periods) {
 #                 'AREA:smoothed#99ff99:Mittel' => 1,
 #        );
 }
+}
 
 print $q->header(), $q->start_html();
 print << "_EOF_";
 <h1>Hausmessung</H1>
 <h3>Aquarium</h3>
-<img src="img/temp/aquarium-daily.png">
-<img src="img/temp/aquarium-weekly.png"><br>
+<img src="/hausmessung/img/temp/aquarium-hourly.png">
+<img src="/hausmessung/img/temp/aquarium-daily.png">
+<img src="/hausmessung/img/temp/aquarium-weekly.png"><br>
 <H3>Temperaturen</H3>
-<img src="img/temp/temperatur-daily.png">
-<img src="img/temp/temperatur-weekly.png"><br>
-<h3>Lüfter</h3>
-<img src="img/luefter/luefter-daily.png">
-<img src="img/luefter/luefter-weekly.png"><br>
+<img src="/hausmessung/img/temp/temperatur-hourly.png">
+<img src="/hausmessung/img/temp/temperatur-daily.png">
+<img src="/hausmessung/img/temp/temperatur-weekly.png"><br>
+<h3>L&uuml;fter</h3>
+<img src="/hausmessung/img/luefter/luefter-hourly.png">
+<img src="/hausmessung/img/luefter/luefter-daily.png">
+<img src="/hausmessung/img/luefter/luefter-weekly.png"><br>
 _EOF_
 print $q->end_html();
 
