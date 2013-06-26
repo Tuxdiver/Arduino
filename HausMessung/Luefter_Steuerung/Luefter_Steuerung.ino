@@ -62,6 +62,7 @@ void inc_rpm1() {
   digitalWrite(13,blink);
 }
 
+int h2o_sensor_id=-1;
 
 void init_temp(void) {
   // Start up the library
@@ -80,15 +81,17 @@ void init_temp(void) {
   oneWire.reset_search();
   int i=0;
   while (i < MAX_DEVICES && oneWire.search(device_ids[i])) {
-    Serial.print("Found device ");
-    Serial.print(i, DEC);
-    Serial.print(" with address: ");
-    printAddress(device_ids[i]);
-    Serial.println();
+    device_address_to_string(device_ids[i]);
+
+    Serial << "Found device " <<  i << " with address: " << tmp_device_name << endl;
 
     // set the resolution to 9 bit (Each Dallas/Maxim device is capable of several different resolutions)
     sensors.setResolution(device_ids[i], TEMPERATURE_PRECISION);
 
+    if (!strncmp(tmp_device_name,"28c5c2fa0100000a",16)) {
+      h2o_sensor_id = i;
+      Serial << "Aquarium-Sensor id = " << i << endl;
+    }
     i++;
   }
   number_of_devices = i;
@@ -129,21 +132,13 @@ void setup() {
 
 }
 
+float h2o_temp=0.0;
+int luefter_an = 0;
 
 void loop() {
-  rf12_recvDone();
+  int sensorValue;
 
-  // read the input on analog pin 0:
-  int sensorValue = analogRead(A0);
-  sensorValue = map(sensorValue,0,1023,29,80); 
-  if (sensorValue >= 30) {
-    digitalWrite(4,HIGH);
-    OCR1A = sensorValue;
-  } 
-  else {
-    digitalWrite(4,LOW);
-    sensorValue = 0;
-  }
+  rf12_recvDone();
 
   int time_now = millis();
 
@@ -166,6 +161,9 @@ void loop() {
           device_address_to_string(device_ids[i]);
           strncpy((char*)payload.data.temperatur.name, tmp_device_name, 17);
           payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
+          if (i == h2o_sensor_id) {
+            h2o_temp = payload.data.temperatur.temp;
+          }
           Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << endl;
 
           byte header = RF12_HDR_DST | 1;
@@ -175,6 +173,42 @@ void loop() {
         }
       }
     }
+
+
+
+    // read the input on analog pin 0:
+    /*    if (h2o_sensor_id == -1 || h2o_temp <= 0) {
+     sensorValue = analogRead(A0);
+     sensorValue = map(sensorValue,0,1023,29,80); 
+     } 
+     */
+
+    sensorValue = map(h2o_temp*100,1950,2100,29,80);
+    if (h2o_temp > 21) {
+      sensorValue = 80;
+    }
+    if (sensorValue < 29) {
+      sensorValue = 29;
+    }    
+    Serial << "Mapping: " << sensorValue << endl;
+
+    // Hysterese Logik
+    if (luefter_an == 0 && sensorValue >= 36) {
+      digitalWrite(4,HIGH);
+      luefter_an = 1;
+    } 
+    if (luefter_an == 1 && sensorValue <= 31) {
+      digitalWrite(4,LOW);
+      luefter_an = 0;
+    }
+
+    // Wenn luefter aus sein soll, PWM auf 0
+    if (luefter_an == 0) {
+      sensorValue = 0;
+    }
+    OCR1A = sensorValue;
+
+
 
     rf12_recvDone();
     if (rf12_canSend()) {
@@ -191,7 +225,7 @@ void loop() {
     Serial << "Luefter: " << sensorValue << " RPM: " << rpm1_counter << " " << rpm1 << endl; 
   }
 
-  delay(10);
+  delay(100);
 }
 
 
@@ -213,6 +247,10 @@ void device_address_to_string(DeviceAddress deviceAddress)
   deviceAddress[4],deviceAddress[5],deviceAddress[6],deviceAddress[7]);
   tmp_device_name[16]=0;
 }
+
+
+
+
 
 
 
