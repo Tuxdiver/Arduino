@@ -6,5 +6,6 @@ Currently included here:
 Contains code to meassure power consumption of our house by an Arduino and to send these data
 via radio to a central arduino node, where it is stored on a NAS.
 Code for temperature meassurement with DS18B20 sensors will follow
+Currently, the water temperature of the Axolotl water is meassured and a fan is used to cool the water.
 
 * more coming soon...
