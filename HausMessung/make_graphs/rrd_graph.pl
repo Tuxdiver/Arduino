@@ -10,6 +10,7 @@ if (!-d "/run/shm/HausMessung/img/") {
 }
 
 my $q = new CGI;
+print $q->header(), $q->start_html('Hausmessung');
 
 #my $dest = "/home/pi/Arduino/HausMessung/img";
 my $dest = "/run/shm/HausMessung/img";
@@ -123,7 +124,6 @@ foreach my $period (@periods) {
 }
 }
 
-print $q->header('Hausmessung'), $q->start_html('Hausmessung');
 print << "_EOF_";
 <h1>Hausmessung</H1>
 <h3>Aquarium</h3>
