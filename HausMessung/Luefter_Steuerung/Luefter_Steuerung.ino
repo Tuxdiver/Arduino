@@ -136,13 +136,12 @@ float h2o_temp=0.0;
 int luefter_an = 0;
 
 void loop() {
-  int sensorValue;
-
+  
   rf12_recvDone();
 
   int time_now = millis();
-
-  if (time_now - last_read > 5000) {
+  if (time_now - last_read >= 5000) {
+    
     float time_faktor = (time_now-last_read) / 1000.0;
     rpm1 = rpm1_counter * 30 / time_faktor;
     last_read = time_now;
@@ -151,13 +150,11 @@ void loop() {
 
     // Send the command to get temperatures
     sensors.requestTemperatures();
-    delay(50);
+
     for(int i = 0; i < number_of_devices; i++) {
       if (device_ids[i]) {
-        rf12_recvDone();
-        if (rf12_canSend()) {
-          payload.id = 31;
           payload.typ = 1;
+          payload.id = 31;
           device_address_to_string(device_ids[i]);
           strncpy((char*)payload.data.temperatur.name, tmp_device_name, 17);
           payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
@@ -166,39 +163,31 @@ void loop() {
           }
           Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << endl;
 
-          byte header = RF12_HDR_DST | 1;
-          rf12_sendStart(header, &payload , sizeof(payload));
-          rf12_sendWait(0);
-          delay(100);
-        }
-      }
+          rf12_recvDone();
+          if (rf12_canSend()) {
+            byte header = RF12_HDR_DST | 1;
+            rf12_sendStart(header, &payload , sizeof(payload));
+            rf12_sendWait(0);
+          }
+       }
     }
 
-
-
-    // read the input on analog pin 0:
-    /*    if (h2o_sensor_id == -1 || h2o_temp <= 0) {
-     sensorValue = analogRead(A0);
-     sensorValue = map(sensorValue,0,1023,29,80); 
-     } 
-     */
-
-    sensorValue = map(h2o_temp*100,1950,2100,29,80);
-    if (h2o_temp > 21) {
+    int sensorValue = map(h2o_temp*100,1800,2100,29,80);
+    if (h2o_temp > 20.5) {
       sensorValue = 80;
     }
-    if (sensorValue < 29) {
-      sensorValue = 29;
+    if (sensorValue <= 29) {
+      sensorValue = 0;
     }    
     Serial << "Mapping: " << sensorValue << endl;
 
     // Hysterese Logik
     if (luefter_an == 0 && sensorValue >= 36) {
-      digitalWrite(4,HIGH);
+      digitalWrite(4, HIGH);
       luefter_an = 1;
     } 
     if (luefter_an == 1 && sensorValue <= 31) {
-      digitalWrite(4,LOW);
+      digitalWrite(4, LOW);
       luefter_an = 0;
     }
 
@@ -210,19 +199,19 @@ void loop() {
 
 
 
+    Serial << "Luefter: " << sensorValue << " RPM: " << rpm1_counter << " " << rpm1 << endl; 
+
+    payload.id = 31;
+    payload.typ = 3;
+    payload.data.luefter.drehzahl = rpm1;
+    payload.data.luefter.duty = sensorValue;
+
     rf12_recvDone();
     if (rf12_canSend()) {
-      payload.id = 31;
-      payload.typ = 3;
-      payload.data.luefter.drehzahl = rpm1;
-      payload.data.luefter.duty = sensorValue;
-
       byte header = RF12_HDR_DST | 1;      
       rf12_sendStart(header, &payload , sizeof(payload));
       rf12_sendWait(0);
     }
-
-    Serial << "Luefter: " << sensorValue << " RPM: " << rpm1_counter << " " << rpm1 << endl; 
   }
 
   delay(100);

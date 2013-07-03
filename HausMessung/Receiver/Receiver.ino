@@ -32,7 +32,7 @@ void loop()
 
         struct payload_data  *data;
         data = (struct payload_data *)rf12_data;
-
+        
         if (data->typ == 1) {
           float temp = data->data.temperatur.temp;
           Serial << "Temp;" << (int)data->id << ";" << temp  << ";" << data->data.temperatur.name << "\n";
@@ -41,6 +41,7 @@ void loop()
         if (data->typ == 2) {
           Serial << "Strom;WATT;" << (int)data->id << ";" << data->data.strom.watt << "\n";
         }
+        
         if (data->typ == 3) {
           Serial << "Luefter;DREHZAHL;" << (int)data->id << ";" << data->data.luefter.drehzahl << "\n";
           Serial << "Luefter;DUTY;" << (int)data->id << ";" << data->data.luefter.duty << "\n";

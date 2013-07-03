@@ -10,7 +10,7 @@
 #define ONE_WIRE_BUS 4
 #define TEMPERATURE_PRECISION 12
 
-#define TRANSMIT_RATE   1000
+#define TRANSMIT_RATE   5000
 
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -94,8 +94,6 @@ void loop(void)
 
     for(int i=0;i<number_of_devices; i++) {
       if (device_ids[i]) {
-        rf12_recvDone();
-        if (rf12_canSend()) {
           payload.id = i;
           payload.typ = 1;
           device_address_to_string(device_ids[i]);
@@ -103,21 +101,20 @@ void loop(void)
           payload.data.temperatur.temp = sensors.getTempC(device_ids[i]);
           Serial  << "Temp" << ";"<< i << ";" << payload.data.temperatur.temp  << ";" << payload.data.temperatur.name << "\n";
 
-          byte header = RF12_HDR_DST | 1;
-          rf12_sendStart(header, &payload , sizeof(payload));
-          rf12_sendWait(0);
-        }
-      }
+          rf12_recvDone();
+          if (rf12_canSend()) {
+            byte header = RF12_HDR_DST | 1;
+            rf12_sendStart(header, &payload , sizeof(payload));
+            rf12_sendWait(0);
+            last_transmit = millis();
+          }
+       }
     }
-
-
-
-    last_transmit = millis();
   }
 
 
   // don't like busy waits - just sleep a while
-  delay(10);
+  delay(100);
 }
 
 
